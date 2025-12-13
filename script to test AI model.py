@@ -2,7 +2,7 @@ import tensorflow as tf
 import numpy as np
 
 # Load the trained model
-model = tf.keras.models.load_model("cell_analyzer_model.h5")
+model = tf.keras.models.load_model("Trainable AI")
 
 # The names of your folders (must match exactly)
 class_names = ['damaged_cells', 'healthy_cells']
