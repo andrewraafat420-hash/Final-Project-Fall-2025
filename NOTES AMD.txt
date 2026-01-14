@@ -1,0 +1,69 @@
+
+ *لازم تقرا كله قبل ما تنفذ اى خطوات*
+
+
+
+
+
+make this ai model train from my amd rx model card instead of only my processor ?
+
+pip uninstall tensorflow
+pip install tensorflow-cpu==2.10
+pip install tensorflow-directml-plugin
+
+
+
+ERROR: Could not find a version that satisfies the requirement tensorflow-directml-plugin (from versions: none)
+
+ERROR: No matching distribution found for tensorflow-directml-plugin
+
+Install Python 3.10
+https://www.python.org/downloads/release/python-31011/
+
+# 1. Create a virtual environment named "amd_env" using Python 3.10
+py -3.10 -m venv amd_env
+
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process -Force
+
+# (If using Command Prompt):
+amd_env\Scripts\activate
+# (If using PowerShell):
+.\amd_env\Scripts\Activate.ps1
+
+
+ WARNING: The scripts pip.exe, pip3.13.exe and pip3.exe are installed in 'C:\Users\andre\AppData\Local\Packages\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\LocalCache\local-packages\Python313\Scripts' which is not on PATH.
+  Consider adding this directory to PATH or, if you prefer to suppress this warning, use --no-warn-script-location.
+
+# Update pip for this environment only
+python -m pip install --upgrade pip
+
+# Install the specific compatible versions
+pip install tensorflow-cpu==2.10
+pip install tensorflow-directml-plugin
+pip install matplotlib
+
+
+TypeError: Unable to convert function return value to a Python type! The signature was
+
+        () -> handle
+
+another hidden library called Protobuf likely updated itself to a version that is too new (version 4.x or 5.x) for the old TensorFlow 2.10 to handle.
+
+
+
+
+
+pip install tensorflow-cpu==2.10.0 tensorflow-directml-plugin protobuf==3.19.6 tensorboard==2.10.1 numpy==1.23.5
+
+
+
+
+
+
+
+
+
+
+
+
+
