@@ -24,4 +24,34 @@ pip install numpy
  must be this version of tensorflow further updates for windows doesn't support this code or cuda cores at least for windows version
 
 
+
+
+You need to download these from the NVIDIA website.
+
+CUDA Toolkit: Version 11.2 (Recommended for TF 2.10)
+
+cuDNN: Version 8.1 (Designed for CUDA 11.2)
+
+
+
+# 1. Create a new environment (Python 3.9 is best for TF 2.10)
+py -3.9 -m venv cuda_env
+
+# 2. Activate it
+cuda_env\Scripts\activate
+
+# 3. Upgrade pip
+python -m pip install --upgrade pip
+
+# 4. Install TensorFlow 2.10 (The last version to support Windows GPU Natively)
+pip install tensorflow==2.10
+
+# 5. Install Plotting library
+pip install matplotlib
+
+
+
+
+
+
 Follow the exact installation steps  (TensorFlow 2.10 + CUDA 11.2). Do not install "new" drivers or "new" Python, or it will break.
