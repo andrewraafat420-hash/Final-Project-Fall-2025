@@ -1,0 +1,27 @@
+Hardware Requirements
+To run this code on the GPU, you strictly need:
+
+NVIDIA Graphics Card: GTX 10-series, RTX 20/30/40-series, or newer. (AMD cards will not work with this specific script configuration).
+
+VRAM: At least 4GB of Video Memory is recommended. If you have less, you might need to lower the BATCH_SIZE in the code.
+
+
+
+advisable if have exactly 4 gigs or laptop version graphics card to reduce batch size
+
+BATCH_SIZE = 32
+
+Change it to:
+BATCH_SIZE = 16
+
+
+requried libiraries
+
+pip install tensorflow==2.10    
+pip install matplotlib
+pip install numpy
+
+ must be this version of tensorflow further updates for windows doesn't support this code or cuda cores at least for windows version
+
+
+Follow the exact installation steps  (TensorFlow 2.10 + CUDA 11.2). Do not install "new" drivers or "new" Python, or it will break.
