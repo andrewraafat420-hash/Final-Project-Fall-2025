@@ -109,12 +109,12 @@ model.compile(optimizer='adam',
 early_stopping = callbacks.EarlyStopping(
     monitor='val_loss', 
     patience=4, 
-    restore_best_weights=True
+    restore_best_weights=True,
     verbose=1
 )
 
 checkpoint = callbacks.ModelCheckpoint(
-    filepath='CTE_analyzer_model.h5',
+    filepath='CTE_analyzer_model 2.h5',
     save_best_only=True,
     monitor='val_accuracy',
     mode='max'
@@ -155,4 +155,4 @@ try:
 except Exception as e:
     print(f"Skipping plot generation: {e}")
 
-print("\nDone! Model saved as 'CTE_analyzer_model.h5'")
+print("\nDone! Model saved as 'CTE_analyzer_model 2.h5'")

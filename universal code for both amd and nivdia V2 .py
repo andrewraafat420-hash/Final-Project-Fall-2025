@@ -1,5 +1,6 @@
 import tensorflow as tf
-from tensorflow.keras import layers, models, callbacks
+from tensorflow.keras import layers, models, callbacks, regularizers
+from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.callbacks import EarlyStopping
 import matplotlib.pyplot as plt
 import os
@@ -31,10 +32,10 @@ else:
 # --- 2. CONFIGURATION ---
 # UPDATE THIS PATH! 
 
-DATASET_PATH = r"C:\Users\andre\Downloads\Compressed\Brain_Data_Organised" 
+DATASET_PATH = r"C:\Users\andre\Downloads\Compressed\training_set"  # Path to your dataset folder
 
-IMG_HEIGHT = 224
-IMG_WIDTH = 224
+IMG_HEIGHT = 150
+IMG_WIDTH = 150
 
 # BATCH SIZE STRATEGY:
 # - Use 16 for AMD with 4GB VRAM.
@@ -71,50 +72,91 @@ train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
 val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 # --- 4. DATA AUGMENTATION ---
+# تعريف طبقة زيادة البيانات
 data_augmentation = tf.keras.Sequential([
-  layers.RandomFlip("horizontal", input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
-  layers.RandomRotation(0.1),
-  layers.RandomZoom(0.1),
+    layers.RandomFlip("horizontal_and_vertical"),
+layers.RandomRotation(0.05),   # تدوير بسيط
+    layers.RandomZoom(0.05),     # تقريب
+    layers.RandomTranslation(0.05, 0.05), # تحريك بسيط
+    layers.RandomContrast(0.2), # مهم جداً لصور العيون
+    layers.RandomBrightness(0.2),
+    # بنحرك الصورة بنسبة بسيطه عشان الموديل ميتعودش على المركز
+    layers.RandomTranslation(height_factor=0.1, width_factor=0.1),
 ])
 
 # --- 5. BUILD MODEL ---
+
 model = models.Sequential([
+    layers.Input(shape=(IMG_HEIGHT, IMG_WIDTH, 3)),
+    
+    # Data Augmentation Layer
     data_augmentation,
+    #layers.GaussianNoise(0.1),
     layers.Rescaling(1./255),
     
     # Block 1
-    layers.Conv2D(32, 3, padding='same', activation='relu'),
+    layers.Conv2D(32, 3, padding='same', use_bias=False),
+    layers.BatchNormalization(),
+    layers.Activation('relu'),
     layers.MaxPooling2D(),
-    
-    # Block 2
-    layers.Conv2D(64, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    
-    # Block 3
-    layers.Conv2D(128, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-    
-    # Flatten & Dense
-    layers.Flatten(),
-    layers.Dense(256, activation='relu'),
-    layers.Dropout(0.5), # Critical for preventing overfitting
-    layers.Dense(2)
-])
 
-model.compile(optimizer='adam',
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+    # Block 2
+    layers.Conv2D(64, 3, padding='same', use_bias=False),
+    layers.BatchNormalization(),
+    layers.Activation('relu'),
+    layers.MaxPooling2D(),
+
+    # Block 3 
+    layers.Conv2D(128, 3, padding='same', use_bias=False),
+    layers.BatchNormalization(),
+    layers.Activation('relu'),
+    layers.Conv2D(128, 3, padding='same', use_bias=False), # طبقة زيادة للدقة
+    layers.BatchNormalization(),
+    layers.Activation('relu'),
+    layers.MaxPooling2D(),
+
+    # Block 4 (الأخير - هنقف عند 256 عشان نوفر رامات)
+    layers.Conv2D(256, 3, padding='same', use_bias=False),
+    layers.BatchNormalization(),
+    layers.Activation('relu'),
+    layers.MaxPooling2D(),
+    
+    # تقنية الـ Global Average Pooling (ممتازة للـ 4GB VRAM لأنها بتلغي الـ Flatten التقيلة)
+    layers.GlobalAveragePooling2D(),
+
+    # طبقات التصنيف
+    layers.Dense(128, activation='relu', kernel_regularizer=regularizers.l2(0.0001)),
+    layers.Dropout(0.3),
+    
+    
+    
+    layers.Dense(2, activation='softmax') 
+])
+# --- 6. CALLBACKS ---
+
+model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.001),
+              loss=tf.keras.losses.SparseCategoricalCrossentropy(),
               metrics=['accuracy'])
 
-# --- 6. CALLBACKS ---
+
+model.summary()
+
+lr_scheduler = ReduceLROnPlateau(
+    monitor='val_accuracy', 
+    factor=0.5,   
+    patience=5,    # لو متحسنش لمدة 5 مرات
+    min_lr=0.00001,
+    verbose=1
+)
 early_stopping = callbacks.EarlyStopping(
-    monitor='val_loss', 
-    patience=4, 
-    restore_best_weights=True
+    monitor='val_accuracy', 
+    patience=5, 
+    restore_best_weights=True,
     verbose=1
 )
 
 checkpoint = callbacks.ModelCheckpoint(
-    filepath='CTE_analyzer_model.h5',
+    filepath='cell_analyzer_model.h5',
     save_best_only=True,
     monitor='val_accuracy',
     mode='max'
@@ -122,11 +164,17 @@ checkpoint = callbacks.ModelCheckpoint(
 
 # --- 7. TRAIN ---
 print("\nSTARTING TRAINING...")
+
+# Example class weights to handle class imbalance
+
+class_weights = {0: 1, 1: 1}  # Adjust weights as necessary
+
 history = model.fit(
     train_ds,
     validation_data=val_ds,
     epochs=EPOCHS,
-    callbacks=[early_stopping, checkpoint]
+    callbacks=[early_stopping, checkpoint, lr_scheduler],
+    class_weight=class_weights
 )
 
 # --- 8. VISUALIZATION ---
@@ -155,4 +203,4 @@ try:
 except Exception as e:
     print(f"Skipping plot generation: {e}")
 
-print("\nDone! Model saved as 'CTE_analyzer_model.h5'")
+print("\nDone! Model saved as 'cell_analyzer_model.h5'")
