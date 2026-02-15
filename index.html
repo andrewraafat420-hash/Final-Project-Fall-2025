@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المركز الطبي الذكي للتشخيص</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; text-align: center; }
+        .container { background: white; max-width: 600px; margin: 40px auto; padding: 30px; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+        h1 { color: #2c3e50; margin-bottom: 30px; }
+        
+        .select-box { margin-bottom: 20px; text-align: right; }
+        label { font-weight: bold; color: #555; display: block; margin-bottom: 8px; }
+        select, input[type="file"] { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 10px; font-family: 'Cairo'; font-size: 16px; box-sizing: border-box; }
+        select:focus { border-color: #3498db; outline: none; }
+        
+        .upload-area { border: 2px dashed #3498db; padding: 30px; border-radius: 15px; background-color: #f9fcff; cursor: pointer; transition: 0.3s; }
+        .upload-area:hover { background-color: #e6f7ff; }
+        
+        button { background-color: #3498db; color: white; border: none; padding: 15px 40px; font-size: 18px; border-radius: 30px; cursor: pointer; margin-top: 20px; width: 100%; font-weight: bold; transition: 0.3s; }
+        button:hover { background-color: #2980b9; transform: translateY(-2px); }
+        
+        #result-card { display: none; margin-top: 30px; padding: 20px; border-radius: 15px; animation: fadeIn 0.5s; }
+        .safe { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        /* تنسيق جملة إخلاء المسؤولية */
+        .disclaimer {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            font-size: 13px;
+            color: #666;
+            font-weight: bold;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .preview-img { max-width: 100%; max-height: 300px; border-radius: 10px; margin-top: 15px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🩺 نظام التشخيص الذكي بالـ AI</h1>
+    
+    <form id="diagnosis-form">
+        <div class="select-box">
+            <label>اختر نوع الفحص المطلوب:</label>
+            <select name="disease_type" id="disease-select">
+                <option value="cte">🧠 فحص الجلطات الدماغية (Brain Stroke)</option>
+                <option value="malaria">🩸 فحص الملاريا (Malaria Cells)</option>
+            </select>
+        </div>
+
+        <div class="upload-area" onclick="document.getElementById('file-input').click()">
+            <p>📂 اضغط هنا لرفع صورة الأشعة أو العينة</p>
+            <input type="file" name="file" id="file-input" accept="image/*" style="display: none;" required onchange="previewImage(this)">
+            <img id="img-preview" class="preview-img" src="" alt="preview">
+        </div>
+
+        <button type="submit" id="submit-btn">بدء التحليل</button>
+    </form>
+
+    <div id="result-card">
+        <h2 id="result-title" style="margin:0"></h2>
+        <p id="result-conf" style="margin:10px 0 0 0"></p>
+        
+        <div class="disclaimer">
+            ⚠️ تنويه: هذه النتائج لأغراض بحثية وليست تشخيصًا طبيًا نهائيًا. يرجى مراجعة الطبيب المختص.
+        </div>
+    </div>
+</div>
+
+<script>
+    const form = document.getElementById('diagnosis-form');
+    const resultCard = document.getElementById('result-card');
+    const resultTitle = document.getElementById('result-title');
+    const resultConf = document.getElementById('result-conf');
+    const submitBtn = document.getElementById('submit-btn');
+
+    // عرض الصورة قبل الرفع
+    function previewImage(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('img-preview').src = e.target.result;
+                document.getElementById('img-preview').style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    form.onsubmit = async (e) => {
+        e.preventDefault();
+        
+        submitBtn.innerHTML = "جاري المعالجة... ⏳";
+        submitBtn.disabled = true;
+        resultCard.style.display = 'none';
+
+        const formData = new FormData(form);
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+            
+            resultCard.style.display = 'block';
+            submitBtn.innerHTML = "بدء التحليل";
+            submitBtn.disabled = false;
+
+            if (data.error) {
+                resultCard.className = 'danger';
+                resultTitle.innerText = "خطأ: " + data.error;
+                resultConf.innerText = "";
+            } else {
+                if (data.is_danger) {
+                    resultCard.className = 'danger';
+                    resultTitle.innerText = "⚠️ النتيجة إيجابية: " + data.result;
+                } else {
+                    resultCard.className = 'safe';
+                    resultTitle.innerText = "✅ النتيجة سلبية: " + data.result;
+                }
+                resultConf.innerText = "نسبة الثقة: " + data.confidence;
+            }
+        } catch (error) {
+            resultCard.style.display = 'block';
+            resultCard.className = 'danger';
+            resultTitle.innerText = "خطأ في الاتصال بالسيرفر";
+            submitBtn.innerHTML = "بدء التحليل";
+            submitBtn.disabled = false;
+        }
+    };
+</script>
+
+</body>
+</html>
